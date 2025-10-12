@@ -1,5 +1,5 @@
 erDiagram
-  %% ByteCart ERD
+  %% ByteCart ERD (GitHub-safe)
 
   USERS ||--o{ ADDRESSES : has
   CATEGORIES ||--o{ CATEGORIES : parent_of
@@ -18,67 +18,67 @@ erDiagram
 
   USERS {
     int user_id PK
-    varchar email UK
-    varchar password_hash
-    varchar full_name
-    varchar phone
+    string email
+    string password_hash
+    string full_name
+    string phone
     boolean is_active
-    timestamp created_at
+    datetime created_at
   }
 
   ADDRESSES {
     int address_id PK
     int user_id FK
-    varchar label
-    varchar recipient_name
-    varchar line1
-    varchar line2
-    varchar city
-    varchar state
-    varchar postal_code
-    char country  %% ISO-3166-1 alpha-2
+    string label
+    string recipient_name
+    string line1
+    string line2
+    string city
+    string state
+    string postal_code
+    string country
     boolean is_default
   }
 
   CATEGORIES {
     int category_id PK
     int parent_id FK
-    varchar name
-    varchar slug UK
+    string name
+    string slug
     boolean is_active
   }
 
   PRODUCTS {
     int product_id PK
     int category_id FK
-    varchar name
-    varchar slug UK
-    text description
+    string name
+    string slug
+    string description
     decimal base_price
     boolean is_active
-    timestamp created_at
+    datetime created_at
   }
 
   PRODUCT_VARIANTS {
     int variant_id PK
     int product_id FK
-    varchar sku UK
-    json attrs
-    decimal price_override  %% null => use base_price
+    string sku
+    string attrs
+    decimal price_override
   }
 
   INVENTORIES {
     int inventory_id PK
-    int variant_id FK UK
+    int variant_id FK
     int qty_available
   }
 
   CARTS {
     int cart_id PK
     int user_id FK
-    enum status    %% active|converted|abandoned
-    timestamp created_at
-    timestamp updated_at
+    string status
+    datetime created_at
+    datetime updated_at
   }
 
   CART_ITEMS {
@@ -92,19 +92,19 @@ erDiagram
   ORDERS {
     int order_id PK
     int user_id FK
-    enum status    %% pending|paid|cancelled|failed
-    timestamp placed_at
-    char currency  %% ISO-4217 (3)
+    string status
+    datetime placed_at
+    string currency
     decimal total_amount
-    json shipping_address
+    string shipping_address
   }
 
   ORDER_ITEMS {
     int order_item_id PK
     int order_id FK
     int variant_id FK
-    varchar product_name
-    varchar sku
+    string product_name
+    string sku
     decimal unit_price
     int quantity
     decimal line_total
@@ -112,23 +112,22 @@ erDiagram
 
   PAYMENTS {
     int payment_id PK
-    int order_id FK UK
-    varchar provider
+    int order_id FK
+    string provider
     decimal amount
-    enum status    %% initiated|succeeded|failed
-    varchar txn_ref
-    timestamp paid_at
+    string status
+    string txn_ref
+    datetime paid_at
   }
 
   REVIEWS {
     int review_id PK
     int user_id FK
     int product_id FK
-    int rating      %% 1..5
-    varchar title
-    text body
-    enum status     %% published|hidden
-    timestamp created_at
-    timestamp updated_at
-    %% UNIQUE (user_id, product_id)
+    int rating
+    string title
+    string body
+    string status
+    datetime created_at
+    datetime updated_at
   }
