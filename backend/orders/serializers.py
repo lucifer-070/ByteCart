@@ -2,7 +2,7 @@ from decimal import Decimal
 from rest_framework import serializers
 from products.models import ProductVariant
 from products.serializers import ProductVariantSerializer
-from .models import Cart, CartItem
+from .models import Cart, CartItem, Order, OrderItem, Payment
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -100,3 +100,62 @@ class CartSerializer(serializers.ModelSerializer):
         for item in obj.items.all():
             total += item.unit_price * item.quantity
         return total
+
+# ---------- NEW: ORDER + PAYMENT SERIALIZERS ----------
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = [
+            "id",
+            "variant",
+            "product_name",
+            "sku",
+            "unit_price",
+            "quantity",
+            "line_total",
+        ]
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "id",
+            "provider",
+            "amount",
+            "status",
+            "txn_ref",
+            "paid_at",
+        ]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    payment = PaymentSerializer(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "user",
+            "status",
+            "placed_at",
+            "currency",
+            "total_amount",
+            "shipping_address",
+            "items",
+            "payment",
+        ]
+        read_only_fields = ["user", "status", "placed_at", "total_amount"]
+
+
+class CheckoutSerializer(serializers.Serializer):
+    """
+    Input for /orders/checkout/ endpoint.
+    You can expand this later (e.g., address_id, notes, etc.).
+    """
+    shipping_address = serializers.DictField(
+        child=serializers.CharField(allow_blank=True),
+        required=False,
+    )
