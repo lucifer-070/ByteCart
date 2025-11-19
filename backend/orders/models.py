@@ -83,7 +83,6 @@ class OrderItem(models.Model):
         return f"{self.order_id} · {self.sku} · {self.quantity}"
 
 class Payment(models.Model):
-    # 1:1 via unique FK to Order
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="payment")
     provider = models.CharField(max_length=50, default="Simulated")
     amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
@@ -96,5 +95,14 @@ class Payment(models.Model):
     txn_ref = models.CharField(max_length=120, blank=True, null=True)
     paid_at = models.DateTimeField(blank=True, null=True)
 
+    # NEW: idempotency key for this payment/checkout
+    idempotency_key = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["idempotency_key"]),
+        ]
+
     def __str__(self):
         return f"Payment for Order {self.order_id} · {self.status}"
+
