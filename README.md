@@ -125,8 +125,8 @@ Diagrams and schema docs are included in the `/docs` directory.
 | Phase | Focus | Status |
 |--------|--------|---------|
 | ✅ Phase 1 | Proposal & ER Diagram | Completed |
-| 🏗️ Phase 2 | Core Backend Setup & DB Integration | In Progress |
-| 🔜 Phase 3 | API Testing, Transaction Logic & Deployment | Upcoming |
+| 🏗️ Phase 2 | Core Backend Setup & DB Integration | Completed |
+| 🔜 Phase 3 | API Testing, Transaction Logic & Deployment | Completed |
 
 ---
 
