@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 from decimal import Decimal
+from django.db import IntegrityError
 
 from rest_framework import viewsets, permissions, mixins, status
 from rest_framework.views import APIView
@@ -49,20 +50,28 @@ class CartItemViewSet(viewsets.ModelViewSet):
         )
 
 class CheckoutView(APIView):
-    """
-    POST /orders/checkout/
-    - Uses the current user's active cart
-    - Locks inventory rows
-    - Validates stock
-    - Creates Order + OrderItems + Payment
-    - Marks cart as converted
-    """
-
     permission_classes = [permissions.IsAuthenticated]
 
     @transaction.atomic
     def post(self, request):
         user = request.user
+
+        # 1) Read idempotency key from header (optional but recommended)
+        idempotency_key = request.headers.get("X-Idempotency-Key")
+
+        # If key is provided, check if we've already processed it for this user
+        if idempotency_key:
+            existing_payment = Payment.objects.filter(
+                idempotency_key=idempotency_key,
+                order__user=user,
+                status="succeeded",
+            ).select_related("order").first()
+
+            if existing_payment:
+                # Return the original order; do NOT create a new one
+                order = existing_payment.order
+                out = OrderSerializer(order)
+                return Response(out.data, status=status.HTTP_200_OK)
 
         # validate request body
         serializer = CheckoutSerializer(data=request.data)
@@ -70,7 +79,6 @@ class CheckoutView(APIView):
         shipping_address = serializer.validated_data.get("shipping_address", {})
 
         try:
-            # lock the cart row
             cart = (
                 Cart.objects
                 .select_for_update()
@@ -82,7 +90,6 @@ class CheckoutView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # load and lock cart items + inventory rows
         items = (
             CartItem.objects
             .select_related("variant", "variant__product")
@@ -131,14 +138,14 @@ class CheckoutView(APIView):
         # create order
         order = Order.objects.create(
             user=user,
-            status="paid",  # since payment is simulated as instant success
+            status="paid",
             placed_at=timezone.now(),
             currency="INR",
             total_amount=total,
             shipping_address=shipping_address,
         )
 
-        # create order items snapshot
+        # create order items
         bulk_order_items = []
         for item in items:
             bulk_order_items.append(
@@ -154,22 +161,20 @@ class CheckoutView(APIView):
             )
         OrderItem.objects.bulk_create(bulk_order_items)
 
-        # create simulated payment
-        Payment.objects.create(
+        # create simulated payment, attach idempotency key if present
+        payment = Payment.objects.create(
             order=order,
             provider="Simulated",
             amount=total,
             status="succeeded",
             txn_ref=f"SIM-{order.id}-{int(timezone.now().timestamp())}",
             paid_at=timezone.now(),
+            idempotency_key=idempotency_key,
         )
 
-        # mark cart as converted
         cart.status = "converted"
         cart.save(update_fields=["status"])
 
-        # you might optionally NOT delete cart items to keep history, so we leave them as-is
-
-        # return order details
         out = OrderSerializer(order)
         return Response(out.data, status=status.HTTP_201_CREATED)
+
