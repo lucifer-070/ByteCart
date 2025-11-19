@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third-party
     "rest_framework",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     # Local
     "users",
     "products",
@@ -142,5 +144,15 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated"
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10
+    "PAGE_SIZE": 10,
+    
+    #OpenAPI Schema settings
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ByteCart API",
+    "DESCRIPTION": "Transaction-safe e-commerce backend with Django, DRF, and PostgreSQL.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
